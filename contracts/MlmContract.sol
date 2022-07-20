@@ -9,16 +9,16 @@ contract MlmContract {
     event NewUser(address userAddress);
 
     function entry() public {
-        s_directPartners[msg.sender] = new address[](0);
+        directPartners[msg.sender] = new address[](0);
         emit NewUser(msg.sender);
     }
 
     function entry(address refereeAddress) public {
-        s_directPartners[refereeAddress].push(msg.sender);
+        directPartners[refereeAddress].push(msg.sender);
         emit NewDirectPartner(msg.sender, refereeAddress);
     }
 
     function getDirectPartners() public view returns(uint256) {
-        return s_directPartners[msg.sender].length;
+        return directPartners[msg.sender].length;
     }
 }
