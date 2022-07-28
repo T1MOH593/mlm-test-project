@@ -1,0 +1,14 @@
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+.prettierignore
+.prettierrc
+.idea
+
+#Hardhat files
+cache
+artifacts
+deployments
