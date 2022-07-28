@@ -5,15 +5,14 @@ pragma solidity ^0.8.15;
 import "./interfaces/IInvestorOperations.sol";
 
 /**
-* @author Vlad Andrievski
-* @notice contract provides the basic functionality of record keeping of investors
-*/
+ * @author Vlad Andrievski
+ * @notice contract provides the basic functionality of record keeping of investors
+ */
 contract InvestorOperations is IInvestorOperations {
     mapping(address => address[]) private refereeToReferrals;
     mapping(address => address) private referralToReferee;
 
-    event NewDirectPartner(address referral, address referee);
-    event NewUser(address userAddress);
+    event EnteredInvestor(address referral, address referee);
 
     modifier firstTime() {
         require(referralToReferee[msg.sender] == address(0), "Already entered");
@@ -24,7 +23,7 @@ contract InvestorOperations is IInvestorOperations {
     /// @dev sets referee of msg.sender as msg.sender
     function entry() external firstTime {
         referralToReferee[msg.sender] = msg.sender;
-        emit NewUser(msg.sender);
+        emit EnteredInvestor(msg.sender, msg.sender);
     }
 
     /// @notice sing up investor to the system with referee
@@ -33,7 +32,7 @@ contract InvestorOperations is IInvestorOperations {
         require(referralToReferee[_refereeAddress] != address(0), "Referee not entered");
         refereeToReferrals[_refereeAddress].push(msg.sender);
         referralToReferee[msg.sender] = _refereeAddress;
-        emit NewDirectPartner(msg.sender, _refereeAddress);
+        emit EnteredInvestor(msg.sender, _refereeAddress);
     }
 
     /// @return number of referrals of msg.sender
@@ -41,12 +40,7 @@ contract InvestorOperations is IInvestorOperations {
         return refereeToReferrals[msg.sender].length;
     }
 
-    function getReferralToReferee(address _referral)
-        external
-        view
-        override
-        returns (address)
-    {
+    function getReferralToReferee(address _referral) external view override returns (address) {
         return referralToReferee[_referral];
     }
 

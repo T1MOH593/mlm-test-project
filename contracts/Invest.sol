@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.15;
 
-import "./InvestorOperations.sol";
+import "./interfaces/IInvestorOperations.sol";
 
 /**
-* @title basic multilevel marketing system
-* @notice implements invest and withdraw functionality
-*/
+ * @title basic multilevel marketing system
+ * @notice implements invest and withdraw functionality
+ */
 contract Invest {
     mapping(address => uint256) private investedAmount;
     IInvestorOperations private investorOperations;
@@ -24,42 +24,41 @@ contract Invest {
         investorOperations = IInvestorOperations(_investorOperations);
         depthPayment = [10, 7, 5, 2, 1, 1, 1, 1, 1, 1];
         levelCost = [
-        0.005 ether,
-        0.01 ether,
-        0.02 ether,
-        0.05 ether,
-        0.1 ether,
-        0.2 ether,
-        0.5 ether,
-        1 ether,
-        2 ether,
-        5 ether
+            0.005 ether,
+            0.01 ether,
+            0.02 ether,
+            0.05 ether,
+            0.1 ether,
+            0.2 ether,
+            0.5 ether,
+            1 ether,
+            2 ether,
+            5 ether
         ];
     }
 
     /// @dev mimics invest()
     receive() external payable {
-        require (peopleOps.getReferralToReferee(msg.sender) != address(0), "Not entered");
-        investedAmount[msg.sender] += msg.value - msg.value * investmentFee;
+        require(investorOperations.getReferralToReferee(msg.sender) != address(0), "Not entered");
+        investedAmount[msg.sender] += (msg.value * (100 - 5)) / 100;
     }
 
     /// @notice allows to invest amount of ether; takes investment fee before enroll
     /// @dev updates investedAmount[msg.sender]
     function invest() external payable onlyEntered {
-        investedAmount[msg.sender] += msg.value - msg.value * investmentFee;
+        investedAmount[msg.sender] += (msg.value * (100 - 5)) / 100;
     }
 
     /// @notice withdraws all the funds of msg.sender and pays payout to referees
     /// @dev sets investedAmount[msg.sender] = 0; transfers funds; updates investedAmount of referees
     function withdraw() external {
         uint256 amount = investedAmount[msg.sender];
-        require(amount >= 5 * 1e15, "Too little balance");
+        require(amount != 0, "Too little balance");
         investedAmount[msg.sender] = 0;
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success);
         _payToReferees(msg.sender, amount);
     }
-
 
     /// @return array with levels of referrals
     function getLevelOfReferrals() external view returns (uint256[] memory) {
@@ -67,13 +66,21 @@ contract Invest {
         uint256[] memory _levels = new uint256[](_referrals.length);
         for (uint256 i = 0; i < _levels.length; i++) {
             _levels[i] = _getLevel(_referrals[i]);
-            }
+        }
         return _levels;
     }
 
     /// @return current level of msg.sender
     function getLevel() external view returns (uint256) {
         return _getLevel(msg.sender);
+    }
+
+    function getInvestorOperations() external view returns (IInvestorOperations) {
+        return investorOperations;
+    }
+
+    function getInvestedAmount(address _investor) external view returns (uint256) {
+        return investedAmount[_investor];
     }
 
     /// @param _currReferral The withdrawing referral
@@ -100,12 +107,15 @@ contract Invest {
     /// @return current level of '_investor'
     function _getLevel(address _investor) private view returns (uint256) {
         uint256 _amount = investedAmount[_investor];
-        for (uint256 i = levelCost.length - 1; i >= 0; i--) {
-            if (_amount >= levelCost[i]) {
-                return i + 1;
+        if (_amount < levelCost[0]) {
+            return 0;
+        }
+        for (uint256 i = 1; i < levelCost.length; i++) {
+            if (_amount >= levelCost[i - 1] && _amount < levelCost[i]) {
+                return i;
             }
         }
-        return 0;
+        return levelCost.length;
     }
 
     /// @return number of ones by thousand. For example 10 == 10/1000; 7 == 7/1000
